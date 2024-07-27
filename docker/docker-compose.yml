@@ -1,0 +1,93 @@
+# Последняя версия docker-compose
+version: '3'
+
+# Создаем общую сеть deafult для всех контейнеров
+networks:
+  default:
+    driver: bridge
+
+# Создаем отдельные контейнеры
+services:
+  # Контейнер с веб-приложением
+  app:
+    # Собираем из Dockerfile 
+    build: 
+      # Корнем указываем корень основного проекта
+      context: ../
+      dockerfile: ./docker/DockerfileFrontend
+    # Показываем наружу 80 порт
+    ports: 
+      - "80:80"
+    # Подключаем к общей сети с другими контейнерами
+    networks: 
+      - default
+    # Запускаем только после db
+    depends_on: 
+      - db    
+    # Линкуем внешнюю папку с исходниками внутрь
+    volumes:
+      - "../app:/var/www/app"
+      # Так же линкуем конфиг для nginx
+      - "./conf/nginx:/etc/nginx/sites-available"  
+    # Контейнер с веб-приложением
+  app_api:
+    # Собираем из Dockerfile 
+    build: 
+      # Корнем указываем корень основного проекта
+      context: ../
+      dockerfile: ./docker/DockerfileAPI
+    # Показываем наружу 80 порт
+    ports: 
+      - "9000:9000"
+    # Подключаем к общей сети с другими контейнерами
+    networks: 
+      - default
+    # Запускаем только после db
+    depends_on: 
+      - db    
+    # Линкуем внешнюю папку с исходниками внутрь
+    volumes:
+      - "../app:/var/www/app"
+      # Так же линкуем конфиг для nginx
+      - "./conf/nginx:/etc/nginx/sites-available"      
+  # Контейнер с базой данных
+  db:
+    # Подключаем к общей сети с другими контейнерами
+    networks: 
+      - default
+    image: postgres:15
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
+    #volumes:
+    #  - type: tmpfs
+    #    target: /dev/shm
+    #    tmpfs:
+    #      size: 134217728 # 128*2^20 bytes = 128Mb
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: yii-template-db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - "./database:/var/lib/postgresql/data"
+    
+    #image: mysql:latest
+    ## Подключаем к общей сети с другими контейнерами
+    #networks: 
+    #  - default
+    ## Показываем наружу порт
+    #ports:
+    #  - "3336:3306"
+    ## Задаем параметры для инициализации БД
+    #environment:
+    #  # Пароль к БД
+    #  MYSQL_ROOT_PASSWORD: root
+    #  # Создаваемая по умолчанию бд
+    #  MYSQL_DATABASE: yii-template-db
+    ## Линкуем внешнюю папку для хранения БД
+    #volumes:
+    #  - "./database:/var/lib/mysql"
