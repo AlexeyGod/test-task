@@ -88,7 +88,7 @@ Class Sources extends ActiveRecord {
             unset($object);
         }
 
-        return ['items' => $result, 'errors' => $errors];
+        return ['items' => $items, 'errors' => $errors];
     }
 
 }
